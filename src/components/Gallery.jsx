@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 
 const galleryImages = [
+  { src: '/images/founder.jpg', alt: 'Jackson Hardwick, Force Up founder' },
+  { src: '/images/family.jpg', alt: 'Force Up family and supporters' },
+  { src: '/images/gallery-crew.jpg', alt: 'Force Up crew repping the movement' },
+  { src: '/images/gallery-trio.jpg', alt: 'Force Up community members' },
+  { src: '/images/gallery-camera.jpg', alt: 'Force Up supporters with camera' },
+  { src: '/images/gallery-brick.jpg', alt: 'Force Up member filming content' },
+  { src: '/images/gallery-school.jpg', alt: 'Force Up supporter at school' },
+  { src: '/images/gallery-style.jpg', alt: 'Force Up member styling the tee' },
+  { src: '/images/gallery-navy.jpg', alt: 'Force Up supporter in navy tee' },
+  { src: '/images/gallery-mirror.jpg', alt: 'Force Up member mirror selfie' },
   { src: '/images/gallery1.jpg', alt: 'Force Up community member' },
   { src: '/images/gallery2.jpg', alt: 'Force Up community member' },
   { src: '/images/gallery3.jpg', alt: 'Force Up community member' },
@@ -13,7 +23,7 @@ export default function Gallery() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) setIsVisible(true) },
-      { threshold: 0.1 }
+      { threshold: 0.05 }
     )
     if (sectionRef.current) observer.observe(sectionRef.current)
     return () => observer.disconnect()
@@ -32,17 +42,16 @@ export default function Gallery() {
           </p>
         </div>
 
-        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-700 delay-200 ${isVisible ? 'animate-fade-in-up' : 'opacity-0'}`}>
+        <div className={`columns-2 md:columns-3 gap-4 space-y-4 transition-all duration-700 delay-200 ${isVisible ? 'animate-fade-in-up' : 'opacity-0'}`}>
           {galleryImages.map((image, i) => (
             <div
               key={i}
-              className="group relative rounded-2xl overflow-hidden aspect-[3/4] bg-zinc-900"
-              style={{ transitionDelay: `${i * 100}ms` }}
+              className="group relative rounded-2xl overflow-hidden bg-zinc-900 break-inside-avoid"
             >
               <img
                 src={image.src}
                 alt={image.alt}
-                className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
