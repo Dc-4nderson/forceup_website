@@ -4,7 +4,7 @@ import { PRODUCTS, PAYMENT_LINK } from '../config/stripe'
 
 // Drop your photos into public/images/ as product1.jpg and product2.jpg
 const productImg1 = '/images/product1.jpg'
-const productImg2 = '/images/product2.jpg'
+const productImg2 = '/images/black-shirt.png'
 
 const sizes = ['S', 'M', 'L', 'XL', '2XL']
 const features = [
