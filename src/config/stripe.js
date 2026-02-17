@@ -8,8 +8,8 @@ export const STRIPE_PUBLISHABLE_KEY = 'pk_test_YOUR_KEY_HERE'
 export const PRODUCTS = {
   signatureTee: {
     name: 'FORCE UP™ Signature Tee',
-    description: 'Next Gen… Next Level. More than a shirt — Force Up is about leveling up.',
-    price: 3000, // Price in cents ($30.00)
+    description: 'Next Gen… Next Level. More than a shirt, Force Up is about leveling up.',
+    price: 1600, // Price in cents ($16.00)
     currency: 'usd',
     // Add your Stripe Price ID here once created in Stripe Dashboard
     stripePriceId: 'price_YOUR_PRICE_ID_HERE',

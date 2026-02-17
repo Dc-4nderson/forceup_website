@@ -5,6 +5,7 @@ import About from './components/About'
 import ForceUpCode from './components/ForceUpCode'
 import WhyWear from './components/WhyWear'
 import Shop from './components/Shop'
+import Gallery from './components/Gallery'
 import Footer from './components/Footer'
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
       <ForceUpCode />
       <WhyWear />
       <Shop />
+      <Gallery />
       <Footer />
     </div>
   )

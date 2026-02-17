@@ -34,7 +34,7 @@ export default function WhyWear() {
 
         <div className={`max-w-3xl mx-auto text-center mb-16 transition-all duration-700 delay-200 ${isVisible ? 'animate-fade-in-up' : 'opacity-0'}`}>
           <p className="text-lg text-gray-400 leading-relaxed">
-            You don't wear Force Up to look cool — you wear it to remind yourself and others who
+            You don't wear Force Up to look cool, you wear it to remind yourself and others who
             you are and that you are working on <span className="text-white font-semibold">leveling up</span>!
           </p>
         </div>

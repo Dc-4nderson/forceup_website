@@ -40,7 +40,7 @@ export default function Hero() {
         {/* Subtext */}
         <p className="animate-fade-in-up animation-delay-400 text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
           Force Up is a movement for the next generation and is a reminder that you don't stay stuck.
-          Whether it's in school, sports, leadership, or life — you're not here to coast, you're here to <span className="text-white font-semibold">level up</span>.
+          Whether it's in school, sports, leadership, or life, you're not here to coast, you're here to <span className="text-white font-semibold">level up</span>.
         </p>
 
         {/* CTA Buttons */}

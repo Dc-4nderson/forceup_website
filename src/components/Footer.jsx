@@ -11,7 +11,7 @@ export default function Footer() {
               <img src="/images/logo.png" alt="Force Up" className="h-10 w-auto" />
             </div>
             <p className="text-gray-500 text-sm leading-relaxed">
-              A movement for the next generation. We don't stay stuck — we level up in school,
+              A movement for the next generation. We don't stay stuck, we level up in school,
               sports, leadership, and life.
             </p>
           </div>

@@ -73,7 +73,7 @@ export default function About() {
 
               <p className="text-gray-400 leading-relaxed">
                 I serve as a youth leader at my church because I believe leadership is about helping
-                others grow — not just being in charge. I am also on a competitive <span className="text-white">STEM robotics
+                others grow, not just being in charge. I am also on a competitive <span className="text-white">STEM robotics
                 team</span>, where I've learned teamwork, innovation, and how to solve problems under pressure.
               </p>
 
@@ -91,14 +91,14 @@ export default function About() {
               </div>
 
               <p className="text-gray-400 leading-relaxed">
-                I'm not just trying to have a clothing brand — I want my friends and family to join me in
+                I'm not just trying to have a clothing brand, I want my friends and family to join me in
                 building a mindset. And I want to see Force Up worn by young leaders everywhere who
                 are committed to becoming their best.
               </p>
 
               <div className="pt-6 border-t border-white/10">
                 <p className="text-white font-bold text-lg">Next Gen… Next Level.</p>
-                <p className="text-gray-500 mt-1">— Jackson Hardwick</p>
+                <p className="text-gray-500 mt-1">- Jackson Hardwick</p>
               </div>
             </div>
           </div>

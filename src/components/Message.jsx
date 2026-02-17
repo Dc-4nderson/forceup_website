@@ -31,7 +31,7 @@ export default function Message() {
         {/* Main content */}
         <div className={`max-w-3xl mx-auto transition-all duration-700 delay-200 ${isVisible ? 'animate-fade-in-up' : 'opacity-0'}`}>
           <p className="text-lg text-gray-400 leading-relaxed mb-8">
-            Force Up isn't just a brand — it's a reminder that we don't stay stuck. Not in bad grades,
+            Force Up isn't just a brand, it's a reminder that we don't stay stuck. Not in bad grades,
             not in fear, and not in excuses. Our generation is built to grow. We level up in the
             classroom, on the field, in leadership, in discipline, and in how we carry ourselves.
           </p>
@@ -55,7 +55,7 @@ export default function Message() {
             {
               icon: Target,
               title: 'Stay Focused',
-              desc: 'Our effort is non-negotiable. We don\'t coast — we commit to excellence in everything.'
+              desc: 'Our effort is non-negotiable. We don\'t coast, we commit to excellence in everything.'
             },
             {
               icon: Zap,
