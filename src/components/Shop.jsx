@@ -8,7 +8,10 @@ const colorways = [
   { name: 'White', image: '/images/shirt-white.png' },
 ]
 
-const sizes = ['S', 'M', 'L', 'XL', '2XL']
+const sizeCategories = {
+  Adult: ['S', 'M', 'L', 'XL'],
+  Kid: ['YS', 'YM', 'YL', 'YXL'],
+}
 const features = [
   { icon: Shirt, text: 'Soft, breathable cotton blend' },
   { icon: Star, text: 'Athletic unisex fit' },
@@ -21,6 +24,7 @@ const PRICE = 16
 
 export default function Shop() {
   const [isVisible, setIsVisible] = useState(false)
+  const [sizeCategory, setSizeCategory] = useState('Adult')
   const [selectedSize, setSelectedSize] = useState('M')
   const [quantity, setQuantity] = useState(1)
   const [selectedColor, setSelectedColor] = useState(0)
@@ -132,8 +136,23 @@ export default function Shop() {
 
               <div className="mb-8">
                 <p className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Size</p>
+                <div className="flex gap-3 mb-3">
+                  {Object.keys(sizeCategories).map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => { setSizeCategory(cat); setSelectedSize(sizeCategories[cat][1]) }}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                        sizeCategory === cat
+                          ? 'bg-white text-black'
+                          : 'bg-white/5 text-gray-400 border border-white/10 hover:border-white/30'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
                 <div className="flex gap-3">
-                  {sizes.map((size) => (
+                  {sizeCategories[sizeCategory].map((size) => (
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}

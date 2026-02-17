@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 const galleryImages = [
-  { src: '/images/founder.jpg', alt: 'Jackson Hardwick, Force Up founder' },
-  { src: '/images/family.jpg', alt: 'Force Up family and supporters' },
+  { src: '/images/gallery1.jpg', alt: 'Force Up community member' },
   { src: '/images/gallery-crew.jpg', alt: 'Force Up crew repping the movement' },
   { src: '/images/gallery-trio.jpg', alt: 'Force Up community members' },
   { src: '/images/gallery-camera.jpg', alt: 'Force Up supporters with camera' },
@@ -11,9 +10,6 @@ const galleryImages = [
   { src: '/images/gallery-style.jpg', alt: 'Force Up member styling the tee' },
   { src: '/images/gallery-navy.jpg', alt: 'Force Up supporter in navy tee' },
   { src: '/images/gallery-mirror.jpg', alt: 'Force Up member mirror selfie' },
-  { src: '/images/gallery1.jpg', alt: 'Force Up community member' },
-  { src: '/images/gallery2.jpg', alt: 'Force Up community member' },
-  { src: '/images/gallery3.jpg', alt: 'Force Up community member' },
 ]
 
 export default function Gallery() {

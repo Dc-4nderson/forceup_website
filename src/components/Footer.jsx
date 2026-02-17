@@ -26,6 +26,7 @@ export default function Footer() {
                 { name: 'About Jackson', href: '#about' },
                 { name: 'The Code', href: '#code' },
                 { name: 'Shop', href: '#shop' },
+                { name: 'Gallery', href: '#gallery' },
               ].map((link) => (
                 <a
                   key={link.name}
