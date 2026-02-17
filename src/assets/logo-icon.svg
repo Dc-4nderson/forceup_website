@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" fill="currentColor">
+  <!-- Arrow head -->
+  <path d="M200 20 L260 120 L225 120 L225 180 L175 180 L175 120 L140 120 Z" fill="currentColor"/>
+  
+  <!-- F vertical stem connecting to wing -->
+  <path d="M175 160 L225 160 L225 320 Q225 360 190 380 Q160 395 120 400 Q90 403 60 395 
+    Q95 380 125 360 Q155 340 170 310 L175 300 Z" fill="currentColor"/>
+  
+  <!-- Upper wing/swoosh -->
+  <path d="M220 155 Q260 145 300 155 Q340 168 360 200 Q340 185 310 180 Q280 178 250 185 
+    Q230 192 220 200 Z" fill="currentColor"/>
+  
+  <!-- Lower wing/swoosh -->
+  <path d="M210 210 Q250 195 295 200 Q340 210 370 240 Q340 228 305 225 Q270 222 240 232 
+    Q220 240 210 255 Z" fill="currentColor"/>
+  
+  <!-- Bottom wing/swoosh -->
+  <path d="M195 270 Q230 255 270 260 Q310 270 345 295 Q310 285 275 282 Q245 280 220 290 
+    Q205 298 195 310 Z" fill="currentColor"/>
+</svg>

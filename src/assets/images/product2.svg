@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">
+  <rect width="800" height="1000" fill="#1a1a1a"/>
+  <text x="400" y="480" font-family="Arial" font-size="24" fill="#666" text-anchor="middle">Product Photo 2</text>
+  <text x="400" y="520" font-family="Arial" font-size="18" fill="#444" text-anchor="middle">Replace with IMG_2128.jpeg</text>
+</svg>
