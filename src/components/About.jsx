@@ -44,15 +44,6 @@ export default function About() {
                   <p className="text-gray-300 text-sm">Founder, Force Up</p>
                 </div>
               </div>
-
-              {/* Secondary image */}
-              <div className="mt-6 rounded-2xl overflow-hidden shadow-xl">
-                <img
-                  src={familyImg}
-                  alt="Force Up family and supporters"
-                  className="w-full h-64 object-cover object-top"
-                />
-              </div>
             </div>
           </div>
 
