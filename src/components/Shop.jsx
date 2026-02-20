@@ -10,7 +10,7 @@ const colorways = [
 
 const sizeCategories = {
   Adult: ['S', 'M', 'L', 'XL'],
-  Kid: ['YS', 'YM', 'YL', 'YXL'],
+  Youth: ['YS', 'YM', 'YL', 'YXL'],
 }
 const features = [
   { icon: Shirt, text: 'Soft, breathable cotton blend' },

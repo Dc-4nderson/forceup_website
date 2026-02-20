@@ -3,7 +3,7 @@ import { Check } from 'lucide-react'
 
 const codeItems = [
   "I don't quit when it gets hard.",
-  "I respect my parents, teachers, and teammates.",
+  "I respect my parents, teachers, and friends.",
   "I study and show up prepared.",
   "I put in work to get better.",
   "I am honest.",

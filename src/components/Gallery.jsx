@@ -10,7 +10,8 @@ const galleryImages = [
   { src: '/images/gallery-style.jpg', alt: 'Force Up member styling the tee' },
   { src: '/images/gallery-navy.jpg', alt: 'Force Up supporter in navy tee' },
   { src: '/images/gallery-mirror.jpg', alt: 'Force Up member mirror selfie' },
-  { src: '/images/gallery-gathering.jpg', alt: 'Force Up family gathering' },
+  { src: '/images/gallery-jacket.jpg', alt: 'Force Up supporter in jacket' },
+  { src: '/images/gallery-selfie.jpg', alt: 'Force Up duo selfie' },
 ]
 
 export default function Gallery() {
