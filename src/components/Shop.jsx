@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ShoppingBag, Star, Shirt, Shield, Paintbrush, Users, Minus, Plus } from 'lucide-react'
-import { PRODUCTS, PAYMENT_LINK } from '../config/stripe'
+import { ShoppingBag, Star, Shirt, Shield, Paintbrush, Users, Minus, Plus, QrCode } from 'lucide-react'
 
 const colorways = [
   { name: 'Black', image: '/images/shirt-black.png' },
@@ -28,7 +27,7 @@ export default function Shop() {
   const [selectedSize, setSelectedSize] = useState('M')
   const [quantity, setQuantity] = useState(1)
   const [selectedColor, setSelectedColor] = useState(0)
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [showQR, setShowQR] = useState(false)
   const sectionRef = useRef(null)
 
   useEffect(() => {
@@ -39,28 +38,6 @@ export default function Shop() {
     if (sectionRef.current) observer.observe(sectionRef.current)
     return () => observer.disconnect()
   }, [])
-
-  const handleCheckout = async () => {
-    setIsProcessing(true)
-    try {
-      if (PAYMENT_LINK) {
-        window.location.href = PAYMENT_LINK
-        return
-      }
-      alert(
-        `Stripe checkout coming soon!\n\nOrder Summary:\n` +
-        `Force Up™ Signature Tee (${colorways[selectedColor].name})\n` +
-        `Size: ${selectedSize}\n` +
-        `Quantity: ${quantity}\n` +
-        `Total: $${(PRICE * quantity).toFixed(2)}`
-      )
-    } catch (error) {
-      console.error('Checkout error:', error)
-      alert('Checkout is not yet configured. Stripe credentials will be added soon.')
-    } finally {
-      setIsProcessing(false)
-    }
-  }
 
   return (
     <section id="shop" ref={sectionRef} className="relative py-28 bg-black">
@@ -188,17 +165,31 @@ export default function Shop() {
               </div>
 
               <button
-                onClick={handleCheckout}
-                disabled={isProcessing}
-                className="w-full flex items-center justify-center gap-3 bg-white text-black py-4 px-8 rounded-full text-sm font-bold uppercase tracking-widest hover:bg-gray-200 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setShowQR(!showQR)}
+                className="w-full flex items-center justify-center gap-3 bg-white text-black py-4 px-8 rounded-full text-sm font-bold uppercase tracking-widest hover:bg-gray-200 transition-all hover:scale-[1.02]"
               >
-                <ShoppingBag className="w-5 h-5" />
-                {isProcessing ? 'Processing...' : `Buy Now, $${(PRICE * quantity).toFixed(2)}`}
+                <QrCode className="w-5 h-5" />
+                {showQR ? 'Hide QR Code' : `Buy Now, $${(PRICE * quantity).toFixed(2)}`}
               </button>
 
-              <p className="text-center text-gray-600 text-xs mt-3">
-                Secure checkout powered by Stripe
-              </p>
+              {showQR && (
+                <div className="mt-6 p-6 border border-white/10 rounded-2xl bg-zinc-900 text-center">
+                  <p className="text-white font-semibold text-lg mb-2">Scan to Pay</p>
+                  <p className="text-gray-400 text-sm mb-4 leading-relaxed">
+                    Please use the QR code for payment and we will get notified of your purchase and contact you within 24 hours to arrange delivery of your shirt.
+                  </p>
+                  <div className="inline-block rounded-xl overflow-hidden bg-white p-2">
+                    <img
+                      src="/images/payment-qr.jpg"
+                      alt="Payment QR Code"
+                      className="w-48 h-48 object-contain"
+                    />
+                  </div>
+                  <p className="text-gray-500 text-xs mt-4">
+                    Now accepting payment by QR code
+                  </p>
+                </div>
+              )}
 
               <div className="mt-10 pt-8 border-t border-white/10">
                 <p className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">Product Features</p>
