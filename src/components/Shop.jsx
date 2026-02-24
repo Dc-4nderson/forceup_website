@@ -178,13 +178,16 @@ export default function Shop() {
                   <p className="text-gray-400 text-sm mb-4 leading-relaxed">
                     Please use the QR code for payment and we will get notified of your purchase and contact you within 24 hours to arrange delivery of your shirt.
                   </p>
-                  <div className="inline-block rounded-xl overflow-hidden bg-white p-2">
+                  <a href="https://gl.me/u/8J9BPgwK97T7" target="_blank" rel="noopener noreferrer" className="inline-block rounded-xl overflow-hidden bg-white p-2 hover:opacity-90 transition-opacity">
                     <img
                       src="/images/payment-qr.jpg"
                       alt="Payment QR Code"
                       className="w-48 h-48 object-contain"
                     />
-                  </div>
+                  </a>
+                  <p className="text-gray-400 text-sm mt-3">
+                    Or <a href="https://gl.me/u/8J9BPgwK97T7" target="_blank" rel="noopener noreferrer" className="text-white underline hover:text-gray-300 transition-colors">click here to pay</a>
+                  </p>
                   <p className="text-gray-500 text-xs mt-4">
                     Now accepting payment by QR code
                   </p>
