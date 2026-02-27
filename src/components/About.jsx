@@ -57,8 +57,8 @@ export default function About() {
 
               <p className="text-gray-400 leading-relaxed">
                 I am an honor student and have maintained good grades since kindergarten. I've been
-                inducted into the <span className="text-white">National Junior Honor Society</span> and selected for the <span className="text-white">Omega
-                Lamplighters Leadership Program</span>, where I continue developing as a young leader
+                inducted into the <span className="text-white">National Junior Honor Society</span>, the <span className="text-white">Omega
+                Lamplighters Leadership Program</span>, and <span className="text-white">Jack and Jill of America</span>, where I continue developing as a young leader
                 committed to excellence.
               </p>
 
