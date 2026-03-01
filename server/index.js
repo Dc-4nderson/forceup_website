@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import pool from './db.js';
 
@@ -8,6 +9,52 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());
+
+const adminTokens = new Map();
+const TOKEN_TTL = 24 * 60 * 60 * 1000;
+const loginAttempts = new Map();
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000;
+
+app.post('/api/admin/login', (req, res) => {
+  const ip = req.ip;
+  const attempts = loginAttempts.get(ip);
+  if (attempts && attempts.count >= MAX_ATTEMPTS && Date.now() - attempts.last < LOCKOUT_MS) {
+    const remaining = Math.ceil((LOCKOUT_MS - (Date.now() - attempts.last)) / 60000);
+    return res.status(429).json({ success: false, error: `Too many attempts. Try again in ${remaining} minutes.` });
+  }
+
+  const { password } = req.body;
+  if (password === process.env.ADMIN_PASSWORD) {
+    loginAttempts.delete(ip);
+    const token = crypto.randomBytes(32).toString('hex');
+    adminTokens.set(token, Date.now() + TOKEN_TTL);
+    res.json({ success: true, token });
+  } else {
+    const current = loginAttempts.get(ip) || { count: 0, last: 0 };
+    loginAttempts.set(ip, { count: current.count + 1, last: Date.now() });
+    res.status(401).json({ success: false, error: 'Invalid password' });
+  }
+});
+
+app.post('/api/admin/logout', (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (token) adminTokens.delete(token);
+  res.json({ success: true });
+});
+
+function requireAdmin(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token || !adminTokens.has(token)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const expiry = adminTokens.get(token);
+  if (Date.now() > expiry) {
+    adminTokens.delete(token);
+    return res.status(401).json({ error: 'Session expired' });
+  }
+  next();
+}
 
 app.get('/api/products', async (req, res) => {
   try {
@@ -18,7 +65,7 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-app.get('/api/products/all', async (req, res) => {
+app.get('/api/products/all', requireAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM products ORDER BY created_at DESC');
     res.json(result.rows);
@@ -27,7 +74,7 @@ app.get('/api/products/all', async (req, res) => {
   }
 });
 
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', requireAdmin, async (req, res) => {
   try {
     const { name, description, price, colors, adult_sizes, youth_sizes, image_url } = req.body;
     const result = await pool.query(
@@ -41,7 +88,7 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, price, colors, adult_sizes, youth_sizes, image_url, active } = req.body;
@@ -56,7 +103,7 @@ app.put('/api/products/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query('DELETE FROM products WHERE id=$1', [id]);
@@ -66,7 +113,7 @@ app.delete('/api/products/:id', async (req, res) => {
   }
 });
 
-app.get('/api/orders', async (req, res) => {
+app.get('/api/orders', requireAdmin, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT o.*, p.name as product_name FROM orders o
@@ -93,7 +140,7 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-app.put('/api/orders/:id/status', async (req, res) => {
+app.put('/api/orders/:id/status', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -107,7 +154,7 @@ app.put('/api/orders/:id/status', async (req, res) => {
   }
 });
 
-app.delete('/api/orders/:id', async (req, res) => {
+app.delete('/api/orders/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query('DELETE FROM orders WHERE id=$1', [id]);

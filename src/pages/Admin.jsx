@@ -1,7 +1,18 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, Pencil, Trash2, Package, ShoppingCart, X, Check } from 'lucide-react'
+import { ArrowLeft, Plus, Pencil, Trash2, Package, ShoppingCart, X, Check, Lock, LogOut } from 'lucide-react'
 
 const STATUS_OPTIONS = ['pending', 'contacted', 'paid', 'delivered', 'cancelled']
+
+function getToken() {
+  return sessionStorage.getItem('admin_token')
+}
+
+function authHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${getToken()}`
+  }
+}
 
 function OrdersTab() {
   const [orders, setOrders] = useState([])
@@ -9,7 +20,7 @@ function OrdersTab() {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch('/api/orders')
+      const res = await fetch('/api/orders', { headers: authHeaders() })
       const data = await res.json()
       setOrders(data)
     } catch (err) {
@@ -24,7 +35,7 @@ function OrdersTab() {
   const updateStatus = async (id, status) => {
     await fetch(`/api/orders/${id}/status`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ status })
     })
     fetchOrders()
@@ -32,7 +43,7 @@ function OrdersTab() {
 
   const deleteOrder = async (id) => {
     if (!confirm('Delete this order?')) return
-    await fetch(`/api/orders/${id}`, { method: 'DELETE' })
+    await fetch(`/api/orders/${id}`, { method: 'DELETE', headers: authHeaders() })
     fetchOrders()
   }
 
@@ -103,7 +114,7 @@ function ProductsTab() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('/api/products/all')
+      const res = await fetch('/api/products/all', { headers: authHeaders() })
       const data = await res.json()
       setProducts(data)
     } catch (err) {
@@ -128,13 +139,13 @@ function ProductsTab() {
     if (editing) {
       await fetch(`/api/products/${editing}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(body)
       })
     } else {
       await fetch('/api/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(body)
       })
     }
@@ -161,7 +172,7 @@ function ProductsTab() {
 
   const deleteProduct = async (id) => {
     if (!confirm('Delete this product? This will also remove all associated orders.')) return
-    await fetch(`/api/products/${id}`, { method: 'DELETE' })
+    await fetch(`/api/products/${id}`, { method: 'DELETE', headers: authHeaders() })
     fetchProducts()
   }
 
@@ -260,8 +271,108 @@ function ProductsTab() {
   )
 }
 
+function LoginScreen({ onLogin }) {
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      })
+      const data = await res.json()
+      if (data.success) {
+        sessionStorage.setItem('admin_token', data.token)
+        onLogin()
+      } else {
+        setError('Incorrect password')
+      }
+    } catch {
+      setError('Connection error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-black flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <img src="/images/logo.png" alt="Force Up" className="h-16 w-auto mx-auto mb-4" />
+          <h1 className="text-2xl font-black text-white" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+            Admin Login
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">Enter your password to continue</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              required
+              autoFocus
+              className="w-full bg-zinc-800 text-white rounded-lg pl-10 pr-4 py-3 border border-white/10 text-sm focus:outline-none focus:border-white/30 transition-colors"
+            />
+          </div>
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-white text-black py-3 rounded-lg text-sm font-bold hover:bg-gray-200 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+        <div className="text-center mt-6">
+          <a href="/" className="text-gray-500 text-sm hover:text-gray-300 transition-colors">
+            Back to site
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Admin() {
+  const [authenticated, setAuthenticated] = useState(false)
   const [tab, setTab] = useState('orders')
+
+  useEffect(() => {
+    const token = sessionStorage.getItem('admin_token')
+    if (token) {
+      fetch('/api/orders', { headers: { 'Authorization': `Bearer ${token}` } })
+        .then(res => {
+          if (res.ok) setAuthenticated(true)
+          else sessionStorage.removeItem('admin_token')
+        })
+        .catch(() => sessionStorage.removeItem('admin_token'))
+    }
+  }, [])
+
+  const handleLogout = async () => {
+    const token = sessionStorage.getItem('admin_token')
+    if (token) {
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).catch(() => {})
+    }
+    sessionStorage.removeItem('admin_token')
+    setAuthenticated(false)
+  }
+
+  if (!authenticated) {
+    return <LoginScreen onLogin={() => setAuthenticated(true)} />
+  }
 
   return (
     <div className="min-h-screen bg-black">
@@ -275,7 +386,15 @@ export default function Admin() {
               Force Up Admin
             </h1>
           </div>
-          <img src="/images/logo.png" alt="Force Up" className="h-10 w-auto" />
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-gray-400 hover:text-white text-sm transition-colors"
+            >
+              <LogOut className="w-4 h-4" /> Sign Out
+            </button>
+            <img src="/images/logo.png" alt="Force Up" className="h-10 w-auto" />
+          </div>
         </div>
 
         <div className="flex gap-2 mb-8">

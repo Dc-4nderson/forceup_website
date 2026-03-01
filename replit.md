@@ -57,9 +57,14 @@ Force Up is a full-stack React website for the "Force Up" brand/movement. It fea
 ## Key Features
 - QR code payment via GreenLight (gl.me)
 - Order form captures customer name, email, phone, color, size, quantity
-- Admin dashboard at /admin for managing orders and products
+- Password-protected admin dashboard at /admin for managing orders and products
+- Token-based auth with 24-hour expiry, rate-limited login (5 attempts, 15-min lockout)
 - Community gallery with masonry layout
 - Adult and Youth sizing options
+
+## Environment Variables
+- `ADMIN_PASSWORD` - Password for the admin dashboard login
+- `DATABASE_URL` - PostgreSQL connection string (auto-managed by Replit)
 
 ## Recent Changes
 - 2026-03-01: Added full-stack backend with Express + PostgreSQL, admin dashboard, order tracking, product CRUD
