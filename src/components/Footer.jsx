@@ -1,4 +1,4 @@
-import { Instagram, Mail } from 'lucide-react'
+import { Instagram, Mail, Settings } from 'lucide-react'
 
 export default function Footer() {
   return (
@@ -67,9 +67,18 @@ export default function Footer() {
           <p className="text-gray-600 text-xs">
             © {new Date().getFullYear()} Force Up™. All rights reserved.
           </p>
-          <p className="text-gray-600 text-xs tracking-widest uppercase">
-            Next Gen… Next Level
-          </p>
+          <div className="flex items-center gap-6">
+            <p className="text-gray-600 text-xs tracking-widest uppercase">
+              Next Gen… Next Level
+            </p>
+            <a
+              href="/admin"
+              className="text-gray-700 hover:text-gray-400 transition-colors"
+              title="Admin"
+            >
+              <Settings className="w-4 h-4" />
+            </a>
+          </div>
         </div>
       </div>
     </footer>
