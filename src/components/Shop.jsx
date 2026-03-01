@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ShoppingBag, Star, Shirt, Shield, Paintbrush, Users, Minus, Plus, QrCode } from 'lucide-react'
+import { ShoppingBag, Star, Shirt, Shield, Paintbrush, Users, Minus, Plus, QrCode, CheckCircle } from 'lucide-react'
 
 const colorways = [
   { name: 'Black', image: '/images/shirt-black.png' },
@@ -28,6 +28,10 @@ export default function Shop() {
   const [quantity, setQuantity] = useState(1)
   const [selectedColor, setSelectedColor] = useState(0)
   const [showQR, setShowQR] = useState(false)
+  const [orderSubmitted, setOrderSubmitted] = useState(false)
+  const [customerName, setCustomerName] = useState('')
+  const [customerEmail, setCustomerEmail] = useState('')
+  const [customerPhone, setCustomerPhone] = useState('')
   const sectionRef = useRef(null)
 
   useEffect(() => {
@@ -38,6 +42,30 @@ export default function Shop() {
     if (sectionRef.current) observer.observe(sectionRef.current)
     return () => observer.disconnect()
   }, [])
+
+  const submitOrder = async () => {
+    if (!customerName.trim()) return
+    try {
+      await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: 1,
+          customer_name: customerName,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
+          color: colorways[selectedColor].name,
+          size_category: sizeCategory,
+          size: selectedSize,
+          quantity,
+          total: PRICE * quantity,
+        })
+      })
+      setOrderSubmitted(true)
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   return (
     <section id="shop" ref={sectionRef} className="relative py-28 bg-black">
@@ -173,24 +201,72 @@ export default function Shop() {
               </button>
 
               {showQR && (
-                <div className="mt-6 p-6 border border-white/10 rounded-2xl bg-zinc-900 text-center">
-                  <p className="text-white font-semibold text-lg mb-2">Scan to Pay</p>
-                  <p className="text-gray-400 text-sm mb-4 leading-relaxed">
-                    Please use the QR code for payment and we will get notified of your purchase and contact you within 24 hours to arrange delivery of your shirt.
-                  </p>
-                  <a href="https://gl.me/u/8J9BPgwK97T7" target="_blank" rel="noopener noreferrer" className="inline-block rounded-xl overflow-hidden bg-white p-2 hover:opacity-90 transition-opacity">
-                    <img
-                      src="/images/payment-qr.jpg"
-                      alt="Payment QR Code"
-                      className="w-48 h-48 object-contain"
-                    />
-                  </a>
-                  <p className="text-gray-400 text-sm mt-3">
-                    Or <a href="https://gl.me/u/8J9BPgwK97T7" target="_blank" rel="noopener noreferrer" className="text-white underline hover:text-gray-300 transition-colors">click here to pay</a>
-                  </p>
-                  <p className="text-gray-500 text-xs mt-4">
-                    Now accepting payment by QR code
-                  </p>
+                <div className="mt-6 p-6 border border-white/10 rounded-2xl bg-zinc-900">
+                  {orderSubmitted ? (
+                    <div className="text-center py-4">
+                      <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
+                      <p className="text-white font-semibold text-lg mb-2">Order Submitted!</p>
+                      <p className="text-gray-400 text-sm leading-relaxed">
+                        We will contact you within 24 hours to arrange delivery of your shirt. Thank you for supporting the movement!
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mb-6 space-y-3">
+                        <p className="text-white font-semibold text-sm uppercase tracking-wider">Your Info</p>
+                        <input
+                          type="text"
+                          placeholder="Your Name *"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          className="w-full bg-zinc-800 text-white rounded-lg px-4 py-3 border border-white/10 text-sm placeholder-gray-500 focus:border-white/30 outline-none"
+                        />
+                        <input
+                          type="email"
+                          placeholder="Email"
+                          value={customerEmail}
+                          onChange={(e) => setCustomerEmail(e.target.value)}
+                          className="w-full bg-zinc-800 text-white rounded-lg px-4 py-3 border border-white/10 text-sm placeholder-gray-500 focus:border-white/30 outline-none"
+                        />
+                        <input
+                          type="tel"
+                          placeholder="Phone Number"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          className="w-full bg-zinc-800 text-white rounded-lg px-4 py-3 border border-white/10 text-sm placeholder-gray-500 focus:border-white/30 outline-none"
+                        />
+                        <div className="bg-zinc-800 rounded-lg px-4 py-3 border border-white/10 text-sm text-gray-400">
+                          {colorways[selectedColor].name} / {sizeCategory} {selectedSize} / Qty: {quantity} / ${(PRICE * quantity).toFixed(2)}
+                        </div>
+                        <button
+                          onClick={submitOrder}
+                          disabled={!customerName.trim()}
+                          className="w-full bg-white/10 text-white py-3 rounded-lg text-sm font-bold hover:bg-white/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          Submit Order Details
+                        </button>
+                      </div>
+                      <div className="text-center border-t border-white/10 pt-6">
+                        <p className="text-white font-semibold text-lg mb-2">Scan to Pay</p>
+                        <p className="text-gray-400 text-sm mb-4 leading-relaxed">
+                          Please use the QR code for payment and we will get notified of your purchase and contact you within 24 hours to arrange delivery of your shirt.
+                        </p>
+                        <a href="https://gl.me/u/8J9BPgwK97T7" target="_blank" rel="noopener noreferrer" className="inline-block rounded-xl overflow-hidden bg-white p-2 hover:opacity-90 transition-opacity">
+                          <img
+                            src="/images/payment-qr.jpg"
+                            alt="Payment QR Code"
+                            className="w-48 h-48 object-contain"
+                          />
+                        </a>
+                        <p className="text-gray-400 text-sm mt-3">
+                          Or <a href="https://gl.me/u/8J9BPgwK97T7" target="_blank" rel="noopener noreferrer" className="text-white underline hover:text-gray-300 transition-colors">click here to pay</a>
+                        </p>
+                        <p className="text-gray-500 text-xs mt-4">
+                          Now accepting payment by QR code
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
