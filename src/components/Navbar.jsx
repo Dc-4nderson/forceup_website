@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Menu, X, ShoppingBag } from 'lucide-react'
+import { Menu, X, ShoppingBag, Settings } from 'lucide-react'
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -84,6 +84,14 @@ export default function Navbar() {
           >
             <ShoppingBag className="w-4 h-4" />
             Shop Now
+          </a>
+          <a
+            href="/admin"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-2 text-gray-500 hover:text-white text-sm font-medium tracking-wide uppercase transition-colors pt-2 border-t border-white/10"
+          >
+            <Settings className="w-4 h-4" />
+            Admin
           </a>
         </div>
       </div>

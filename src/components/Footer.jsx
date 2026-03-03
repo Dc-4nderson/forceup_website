@@ -73,10 +73,10 @@ export default function Footer() {
             </p>
             <a
               href="/admin"
-              className="text-gray-700 hover:text-gray-400 transition-colors"
-              title="Admin"
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-300 transition-colors text-xs uppercase tracking-wider"
             >
               <Settings className="w-4 h-4" />
+              Admin
             </a>
           </div>
         </div>
