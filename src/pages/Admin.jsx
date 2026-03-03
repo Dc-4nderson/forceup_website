@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, Pencil, Trash2, Package, ShoppingCart, X, Check, Lock, LogOut } from 'lucide-react'
+import { useState, useEffect, createContext, useContext } from 'react'
+import { ArrowLeft, Plus, Pencil, Trash2, Package, ShoppingCart, X, Check, Lock, LogOut, AlertCircle } from 'lucide-react'
 
 const STATUS_OPTIONS = ['pending', 'contacted', 'paid', 'delivered', 'cancelled']
+
+const AuthContext = createContext()
 
 function getToken() {
   return sessionStorage.getItem('admin_token')
@@ -14,17 +16,35 @@ function authHeaders() {
   }
 }
 
+async function authFetch(url, options = {}) {
+  const res = await fetch(url, {
+    ...options,
+    headers: { ...authHeaders(), ...options.headers }
+  })
+  if (res.status === 401) {
+    sessionStorage.removeItem('admin_token')
+    window.location.reload()
+    throw new Error('Session expired')
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.error || `Request failed (${res.status})`)
+  }
+  return res.json()
+}
+
 function OrdersTab() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch('/api/orders', { headers: authHeaders() })
-      const data = await res.json()
+      setError('')
+      const data = await authFetch('/api/orders')
       setOrders(data)
     } catch (err) {
-      console.error(err)
+      setError(err.message)
     } finally {
       setLoading(false)
     }
@@ -33,18 +53,25 @@ function OrdersTab() {
   useEffect(() => { fetchOrders() }, [])
 
   const updateStatus = async (id, status) => {
-    await fetch(`/api/orders/${id}/status`, {
-      method: 'PUT',
-      headers: authHeaders(),
-      body: JSON.stringify({ status })
-    })
-    fetchOrders()
+    try {
+      await authFetch(`/api/orders/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status })
+      })
+      fetchOrders()
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   const deleteOrder = async (id) => {
     if (!confirm('Delete this order?')) return
-    await fetch(`/api/orders/${id}`, { method: 'DELETE', headers: authHeaders() })
-    fetchOrders()
+    try {
+      await authFetch(`/api/orders/${id}`, { method: 'DELETE' })
+      fetchOrders()
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   if (loading) return <p className="text-gray-400 text-center py-10">Loading orders...</p>
@@ -52,6 +79,12 @@ function OrdersTab() {
   return (
     <div>
       <h2 className="text-2xl font-bold text-white mb-6">Orders ({orders.length})</h2>
+      {error && (
+        <div className="flex items-center gap-2 bg-red-900/30 border border-red-800 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
+        </div>
+      )}
       {orders.length === 0 ? (
         <p className="text-gray-500 text-center py-10">No orders yet.</p>
       ) : (
@@ -109,16 +142,18 @@ function ProductsTab() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const emptyProduct = { name: '', description: '', price: 16, colors: 'Black,Navy,White', adult_sizes: 'S,M,L,XL', youth_sizes: 'YS,YM,YL,YXL', image_url: '', active: true }
   const [form, setForm] = useState(emptyProduct)
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('/api/products/all', { headers: authHeaders() })
-      const data = await res.json()
+      setError('')
+      const data = await authFetch('/api/products/all')
       setProducts(data)
     } catch (err) {
-      console.error(err)
+      setError(err.message)
     } finally {
       setLoading(false)
     }
@@ -128,6 +163,8 @@ function ProductsTab() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
+    setSuccess('')
     const body = {
       ...form,
       price: Number(form.price),
@@ -136,23 +173,28 @@ function ProductsTab() {
       youth_sizes: typeof form.youth_sizes === 'string' ? form.youth_sizes.split(',').map(s => s.trim()) : form.youth_sizes,
     }
 
-    if (editing) {
-      await fetch(`/api/products/${editing}`, {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: JSON.stringify(body)
-      })
-    } else {
-      await fetch('/api/products', {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify(body)
-      })
+    try {
+      if (editing) {
+        await authFetch(`/api/products/${editing}`, {
+          method: 'PUT',
+          body: JSON.stringify(body)
+        })
+        setSuccess('Product updated!')
+      } else {
+        await authFetch('/api/products', {
+          method: 'POST',
+          body: JSON.stringify(body)
+        })
+        setSuccess('Product added!')
+      }
+      setEditing(null)
+      setShowForm(false)
+      setForm(emptyProduct)
+      await fetchProducts()
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError(err.message)
     }
-    setEditing(null)
-    setShowForm(false)
-    setForm(emptyProduct)
-    fetchProducts()
   }
 
   const startEdit = (product) => {
@@ -172,8 +214,14 @@ function ProductsTab() {
 
   const deleteProduct = async (id) => {
     if (!confirm('Delete this product? This will also remove all associated orders.')) return
-    await fetch(`/api/products/${id}`, { method: 'DELETE', headers: authHeaders() })
-    fetchProducts()
+    try {
+      await authFetch(`/api/products/${id}`, { method: 'DELETE' })
+      setSuccess('Product deleted!')
+      await fetchProducts()
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   if (loading) return <p className="text-gray-400 text-center py-10">Loading products...</p>
@@ -189,6 +237,19 @@ function ProductsTab() {
           <Plus className="w-4 h-4" /> Add Product
         </button>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 bg-red-900/30 border border-red-800 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="flex items-center gap-2 bg-green-900/30 border border-green-800 text-green-300 px-4 py-3 rounded-lg mb-4 text-sm">
+          <Check className="w-4 h-4 flex-shrink-0" />
+          {success}
+        </div>
+      )}
 
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-zinc-800 rounded-xl p-6 border border-white/10 mb-6 space-y-4">
@@ -291,7 +352,7 @@ function LoginScreen({ onLogin }) {
         sessionStorage.setItem('admin_token', data.token)
         onLogin()
       } else {
-        setError('Incorrect password')
+        setError(data.error || 'Incorrect password')
       }
     } catch {
       setError('Connection error. Please try again.')
@@ -344,6 +405,7 @@ function LoginScreen({ onLogin }) {
 
 export default function Admin() {
   const [authenticated, setAuthenticated] = useState(false)
+  const [checking, setChecking] = useState(true)
   const [tab, setTab] = useState('orders')
 
   useEffect(() => {
@@ -351,10 +413,16 @@ export default function Admin() {
     if (token) {
       fetch('/api/orders', { headers: { 'Authorization': `Bearer ${token}` } })
         .then(res => {
-          if (res.ok) setAuthenticated(true)
-          else sessionStorage.removeItem('admin_token')
+          if (res.ok) {
+            setAuthenticated(true)
+          } else {
+            sessionStorage.removeItem('admin_token')
+          }
         })
         .catch(() => sessionStorage.removeItem('admin_token'))
+        .finally(() => setChecking(false))
+    } else {
+      setChecking(false)
     }
   }, [])
 
@@ -368,6 +436,12 @@ export default function Admin() {
     }
     sessionStorage.removeItem('admin_token')
     setAuthenticated(false)
+  }
+
+  if (checking) {
+    return <div className="min-h-screen bg-black flex items-center justify-center">
+      <p className="text-gray-400">Loading...</p>
+    </div>
   }
 
   if (!authenticated) {
