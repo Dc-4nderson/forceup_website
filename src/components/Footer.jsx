@@ -1,4 +1,5 @@
-import { Instagram, Mail, Settings } from 'lucide-react'
+import { Mail, Settings } from 'lucide-react'
+import { SiTiktok } from 'react-icons/si'
 
 export default function Footer() {
   return (
@@ -47,10 +48,12 @@ export default function Footer() {
             </p>
             <div className="flex gap-4">
               <a
-                href="#"
+                href="https://www.tiktok.com/@thee.flyjay?is_from_webapp=1&sender_device=pc"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 flex items-center justify-center border border-white/10 rounded-lg text-gray-500 hover:text-white hover:border-white/30 transition-colors"
               >
-                <Instagram className="w-5 h-5" />
+                <SiTiktok className="w-5 h-5" />
               </a>
               <a
                 href="mailto:info@forceup.com"
