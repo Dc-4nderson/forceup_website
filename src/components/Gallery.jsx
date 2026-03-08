@@ -13,6 +13,18 @@ const galleryImages = [
   { src: '/images/gallery-jacket.jpg', alt: 'Force Up supporter in jacket' },
   { src: '/images/gallery-selfie.jpg', alt: 'Force Up duo selfie' },
   { src: '/images/gallery-pointing.jpg', alt: 'Force Up supporter pointing to the logo' },
+  { src: '/images/gallery-bowtie.jpg', alt: 'Young Force Up member in navy tee with bowtie' },
+  { src: '/images/gallery-smile.jpg', alt: 'Force Up supporter smiling in navy tee' },
+  { src: '/images/gallery-three-navy.jpg', alt: 'Three Force Up supporters in matching navy tees' },
+  { src: '/images/gallery-booth.jpg', alt: 'Force Up merch booth with banner' },
+  { src: '/images/gallery-banner.jpg', alt: 'Supporter standing next to Force Up banner' },
+  { src: '/images/gallery-friends.jpg', alt: 'Force Up friends repping the movement outdoors' },
+  { src: '/images/gallery-duo-mural.jpg', alt: 'Force Up duo posing by a mural' },
+  { src: '/images/gallery-table.jpg', alt: 'Force Up crew at the table' },
+  { src: '/images/gallery-field.jpg', alt: 'Force Up member showing off the white tee on the field' },
+  { src: '/images/gallery-bleachers.jpg', alt: 'Force Up group photo on the bleachers' },
+  { src: '/images/gallery-redhead.jpg', alt: 'Force Up supporters hanging out on the field' },
+  { src: '/images/gallery-church.jpg', alt: 'Force Up supporter at an event' },
 ]
 
 export default function Gallery() {
