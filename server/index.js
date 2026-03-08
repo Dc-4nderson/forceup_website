@@ -9,6 +9,59 @@ import pool from './db.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+async function initDatabase() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gallery_images (
+      id SERIAL PRIMARY KEY,
+      src VARCHAR(500) NOT NULL,
+      alt VARCHAR(500) DEFAULT '',
+      display_order INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+
+  const existing = await pool.query('SELECT COUNT(*) FROM gallery_images');
+  const count = parseInt(existing.rows[0].count);
+  if (count === 0 || count === 1) {
+    if (count === 1) await pool.query('DELETE FROM gallery_images');
+    const seedImages = [
+      ['/images/gallery1.jpg', 'Force Up community member'],
+      ['/images/gallery-crew.jpg', 'Force Up crew repping the movement'],
+      ['/images/gallery-trio.jpg', 'Force Up community members'],
+      ['/images/gallery-camera.jpg', 'Force Up supporters with camera'],
+      ['/images/gallery-brick.jpg', 'Force Up member filming content'],
+      ['/images/gallery-school.jpg', 'Force Up supporter at school'],
+      ['/images/gallery-style.jpg', 'Force Up member styling the tee'],
+      ['/images/gallery-navy.jpg', 'Force Up supporter in navy tee'],
+      ['/images/gallery-mirror.jpg', 'Force Up member mirror selfie'],
+      ['/images/gallery-jacket.jpg', 'Force Up supporter in jacket'],
+      ['/images/gallery-selfie.jpg', 'Force Up duo selfie'],
+      ['/images/gallery-pointing.jpg', 'Force Up supporter pointing to the logo'],
+      ['/images/gallery-bowtie.jpg', 'Young Force Up member in navy tee with bowtie'],
+      ['/images/gallery-smile.jpg', 'Force Up supporter smiling in navy tee'],
+      ['/images/gallery-three-navy.jpg', 'Three Force Up supporters in matching navy tees'],
+      ['/images/gallery-booth.jpg', 'Force Up merch booth with banner'],
+      ['/images/gallery-banner.jpg', 'Supporter standing next to Force Up banner'],
+      ['/images/gallery-friends.jpg', 'Force Up friends repping the movement outdoors'],
+      ['/images/gallery-duo-mural.jpg', 'Force Up duo posing by a mural'],
+      ['/images/gallery-table.jpg', 'Force Up crew at the table'],
+      ['/images/gallery-field.jpg', 'Force Up member showing off the white tee on the field'],
+      ['/images/gallery-bleachers.jpg', 'Force Up group photo on the bleachers'],
+      ['/images/gallery-redhead.jpg', 'Force Up supporters hanging out on the field'],
+      ['/images/gallery-church.jpg', 'Force Up supporter at an event'],
+      ['/images/gallery-duo-event.jpg', 'Force Up supporters repping at an event'],
+      ['/images/gallery-wall-chat.jpg', 'Force Up members hanging out by the wall'],
+      ['/images/gallery-brothers.jpg', 'Force Up brothers showing off their tees'],
+    ];
+    for (let i = 0; i < seedImages.length; i++) {
+      await pool.query('INSERT INTO gallery_images (src, alt, display_order) VALUES ($1, $2, $3)', [seedImages[i][0], seedImages[i][1], i]);
+    }
+    console.log(`Seeded ${seedImages.length} gallery images`);
+  }
+}
+
+initDatabase().catch(err => console.error('Database init error:', err));
+
 const app = express();
 app.use(express.json());
 
