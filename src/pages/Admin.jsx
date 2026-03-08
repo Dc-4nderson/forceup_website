@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { ArrowLeft, Trash2, Package, ShoppingCart, Check, Lock, LogOut, AlertCircle } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ArrowLeft, Trash2, Package, ShoppingCart, Check, Lock, LogOut, AlertCircle, ImagePlus, Upload, X } from 'lucide-react'
 
 const STATUS_OPTIONS = ['pending', 'contacted', 'paid', 'delivered', 'cancelled']
 
@@ -126,6 +126,185 @@ function OrdersTab() {
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function GalleryTab() {
+  const [images, setImages] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [alt, setAlt] = useState('')
+  const [preview, setPreview] = useState(null)
+  const [selectedFile, setSelectedFile] = useState(null)
+  const fileInputRef = useRef(null)
+
+  const fetchImages = async () => {
+    try {
+      setError('')
+      const data = await authFetch('/api/gallery')
+      setImages(data)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchImages() }, [])
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setSelectedFile(file)
+    const reader = new FileReader()
+    reader.onload = (ev) => setPreview(ev.target.result)
+    reader.readAsDataURL(file)
+  }
+
+  const clearSelection = () => {
+    setSelectedFile(null)
+    setPreview(null)
+    setAlt('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleUpload = async (e) => {
+    e.preventDefault()
+    if (!selectedFile) return
+    setUploading(true)
+    setError('')
+    try {
+      const formData = new FormData()
+      formData.append('image', selectedFile)
+      formData.append('alt', alt || 'Force Up community photo')
+      const token = getToken()
+      const res = await fetch('/api/gallery/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      })
+      if (res.status === 401) {
+        sessionStorage.removeItem('admin_token')
+        window.location.reload()
+        return
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Upload failed')
+      }
+      clearSelection()
+      fetchImages()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const deleteImage = async (id) => {
+    if (!confirm('Delete this gallery image?')) return
+    try {
+      await authFetch(`/api/gallery/${id}`, { method: 'DELETE' })
+      fetchImages()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  if (loading) return <p className="text-gray-400 text-center py-10">Loading gallery...</p>
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-white mb-6">Gallery ({images.length} photos)</h2>
+      {error && (
+        <div className="flex items-center gap-2 bg-red-900/30 border border-red-800 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleUpload} className="bg-zinc-800 rounded-xl p-5 border border-white/10 mb-6">
+        <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+          <ImagePlus className="w-5 h-5" /> Add Photo
+        </h3>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFileSelect}
+              className="hidden"
+              id="gallery-upload"
+            />
+            {preview ? (
+              <div className="relative inline-block">
+                <img src={preview} alt="Preview" className="h-32 w-auto rounded-lg object-cover" />
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-500"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <label
+                htmlFor="gallery-upload"
+                className="flex items-center justify-center gap-2 h-32 border-2 border-dashed border-white/20 rounded-lg cursor-pointer hover:border-white/40 transition-colors text-gray-400 hover:text-gray-300"
+              >
+                <Upload className="w-5 h-5" />
+                <span className="text-sm">Choose an image</span>
+              </label>
+            )}
+          </div>
+          <div className="flex-1 flex flex-col gap-3">
+            <input
+              type="text"
+              value={alt}
+              onChange={(e) => setAlt(e.target.value)}
+              placeholder="Description (optional)"
+              className="bg-zinc-700 text-white rounded-lg px-4 py-2.5 border border-white/10 text-sm focus:outline-none focus:border-white/30 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={!selectedFile || uploading}
+              className="bg-white text-black px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {uploading ? 'Uploading...' : <><Upload className="w-4 h-4" /> Upload Photo</>}
+            </button>
+          </div>
+        </div>
+      </form>
+
+      {images.length === 0 ? (
+        <p className="text-gray-500 text-center py-10">No gallery images yet.</p>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {images.map((image) => (
+            <div key={image.id} className="group relative rounded-xl overflow-hidden bg-zinc-800 border border-white/10">
+              <img
+                src={image.src}
+                alt={image.alt}
+                className="w-full h-40 object-cover"
+              />
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <button
+                  onClick={() => deleteImage(image.id)}
+                  className="bg-red-600 text-white p-2 rounded-lg hover:bg-red-500 transition-colors"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-2">
+                <p className="text-gray-400 text-xs truncate">{image.alt}</p>
               </div>
             </div>
           ))}
@@ -294,6 +473,14 @@ export default function Admin() {
             <ShoppingCart className="w-4 h-4" /> Orders
           </button>
           <button
+            onClick={() => setTab('gallery')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              tab === 'gallery' ? 'bg-white text-black' : 'bg-zinc-800 text-gray-400 hover:text-white border border-white/10'
+            }`}
+          >
+            <ImagePlus className="w-4 h-4" /> Gallery
+          </button>
+          <button
             onClick={() => setTab('products')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
               tab === 'products' ? 'bg-white text-black' : 'bg-zinc-800 text-gray-400 hover:text-white border border-white/10'
@@ -303,7 +490,9 @@ export default function Admin() {
           </button>
         </div>
 
-        {tab === 'orders' ? <OrdersTab /> : <ProductsTab />}
+        {tab === 'orders' && <OrdersTab />}
+        {tab === 'gallery' && <GalleryTab />}
+        {tab === 'products' && <ProductsTab />}
       </div>
     </div>
   )

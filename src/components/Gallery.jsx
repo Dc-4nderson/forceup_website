@@ -1,35 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 
-const galleryImages = [
-  { src: '/images/gallery1.jpg', alt: 'Force Up community member' },
-  { src: '/images/gallery-crew.jpg', alt: 'Force Up crew repping the movement' },
-  { src: '/images/gallery-trio.jpg', alt: 'Force Up community members' },
-  { src: '/images/gallery-camera.jpg', alt: 'Force Up supporters with camera' },
-  { src: '/images/gallery-brick.jpg', alt: 'Force Up member filming content' },
-  { src: '/images/gallery-school.jpg', alt: 'Force Up supporter at school' },
-  { src: '/images/gallery-style.jpg', alt: 'Force Up member styling the tee' },
-  { src: '/images/gallery-navy.jpg', alt: 'Force Up supporter in navy tee' },
-  { src: '/images/gallery-mirror.jpg', alt: 'Force Up member mirror selfie' },
-  { src: '/images/gallery-jacket.jpg', alt: 'Force Up supporter in jacket' },
-  { src: '/images/gallery-selfie.jpg', alt: 'Force Up duo selfie' },
-  { src: '/images/gallery-pointing.jpg', alt: 'Force Up supporter pointing to the logo' },
-  { src: '/images/gallery-bowtie.jpg', alt: 'Young Force Up member in navy tee with bowtie' },
-  { src: '/images/gallery-smile.jpg', alt: 'Force Up supporter smiling in navy tee' },
-  { src: '/images/gallery-three-navy.jpg', alt: 'Three Force Up supporters in matching navy tees' },
-  { src: '/images/gallery-booth.jpg', alt: 'Force Up merch booth with banner' },
-  { src: '/images/gallery-banner.jpg', alt: 'Supporter standing next to Force Up banner' },
-  { src: '/images/gallery-friends.jpg', alt: 'Force Up friends repping the movement outdoors' },
-  { src: '/images/gallery-duo-mural.jpg', alt: 'Force Up duo posing by a mural' },
-  { src: '/images/gallery-table.jpg', alt: 'Force Up crew at the table' },
-  { src: '/images/gallery-field.jpg', alt: 'Force Up member showing off the white tee on the field' },
-  { src: '/images/gallery-bleachers.jpg', alt: 'Force Up group photo on the bleachers' },
-  { src: '/images/gallery-redhead.jpg', alt: 'Force Up supporters hanging out on the field' },
-  { src: '/images/gallery-church.jpg', alt: 'Force Up supporter at an event' },
-]
-
 export default function Gallery() {
   const [isVisible, setIsVisible] = useState(false)
+  const [images, setImages] = useState([])
   const sectionRef = useRef(null)
+
+  useEffect(() => {
+    fetch('/api/gallery')
+      .then(res => res.json())
+      .then(data => setImages(data))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -54,9 +35,9 @@ export default function Gallery() {
         </div>
 
         <div className={`columns-2 md:columns-3 gap-4 space-y-4 transition-all duration-700 delay-200 ${isVisible ? 'animate-fade-in-up' : 'opacity-0'}`}>
-          {galleryImages.map((image, i) => (
+          {images.map((image) => (
             <div
-              key={i}
+              key={image.id}
               className="group relative rounded-2xl overflow-hidden bg-zinc-900 break-inside-avoid"
             >
               <img

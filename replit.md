@@ -6,7 +6,8 @@ Force Up is a full-stack React website for the "Force Up" brand/movement. It fea
 ## Project Architecture
 - **Frontend**: React 19 with Vite 8 (beta)
 - **Backend**: Express.js API server
-- **Database**: PostgreSQL (orders, products)
+- **Database**: PostgreSQL (orders, products, gallery_images)
+- **File Uploads**: Multer (gallery image uploads)
 - **Styling**: Tailwind CSS 4 via `@tailwindcss/vite` plugin
 - **Routing**: React Router DOM v7
 - **Icons**: Lucide React, React Icons
@@ -47,6 +48,7 @@ Force Up is a full-stack React website for the "Force Up" brand/movement. It fea
 ## Database Schema
 - **products**: id, name, description, price, colors[], adult_sizes[], youth_sizes[], image_url, active, timestamps
 - **orders**: id, product_id, customer_name, customer_email, customer_phone, color, size_category, size, quantity, total, status, notes, created_at
+- **gallery_images**: id, src, alt, display_order, created_at
 
 ## Development
 - **Dev server**: `npm run dev` (runs Express on 3000 + Vite on 5000 concurrently)
@@ -59,7 +61,8 @@ Force Up is a full-stack React website for the "Force Up" brand/movement. It fea
 - Order form captures customer name, email, phone, color, size, quantity
 - Password-protected admin dashboard at /admin for managing orders and products
 - Token-based auth with 24-hour expiry, rate-limited login (5 attempts, 15-min lockout)
-- Community gallery with masonry layout
+- Community gallery with masonry layout, managed via admin dashboard
+- Admin gallery management: upload photos, delete photos (with file cleanup)
 - Adult and Youth sizing options
 
 ## Environment Variables

@@ -1,7 +1,9 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
+import multer from 'multer';
 import pool from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -158,6 +160,77 @@ app.delete('/api/orders/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query('DELETE FROM orders WHERE id=$1', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const isProductionEnv = process.env.NODE_ENV === 'production';
+const uploadsDir = isProductionEnv
+  ? path.join(__dirname, '..', 'dist', 'images')
+  : path.join(__dirname, '..', 'public', 'images');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const name = 'gallery-' + crypto.randomBytes(8).toString('hex') + ext;
+    cb(null, name);
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg', '.jpeg', '.png', '.webp'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error('Only JPG, PNG, and WebP images are allowed'));
+  }
+});
+
+app.get('/api/gallery', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM gallery_images ORDER BY display_order ASC, id ASC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/gallery/upload', requireAdmin, (req, res, next) => {
+  upload.single('image')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}, async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+    const src = '/images/' + req.file.filename;
+    const alt = req.body.alt || 'Force Up community photo';
+    const orderResult = await pool.query('SELECT COALESCE(MAX(display_order), 0) + 1 as next_order FROM gallery_images');
+    const displayOrder = orderResult.rows[0].next_order;
+    const result = await pool.query(
+      'INSERT INTO gallery_images (src, alt, display_order) VALUES ($1, $2, $3) RETURNING *',
+      [src, alt, displayOrder]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/gallery/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const image = await pool.query('SELECT * FROM gallery_images WHERE id=$1', [id]);
+    if (image.rows.length > 0) {
+      const filename = path.basename(image.rows[0].src);
+      const filePath = path.join(uploadsDir, filename);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      await pool.query('DELETE FROM gallery_images WHERE id=$1', [id]);
+    }
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
