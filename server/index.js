@@ -29,6 +29,14 @@ async function initDatabase() {
     ADD COLUMN IF NOT EXISTS mime_type VARCHAR(50)
   `);
 
+  // Remove stale uploaded records — old file-based uploads that were wiped on deploy
+  // These have hex-pattern filenames (e.g. /images/gallery-abc123.jpg) with no image_data
+  await pool.query(`
+    DELETE FROM gallery_images
+    WHERE image_data IS NULL
+    AND src ~ '^/images/gallery-[a-f0-9]{16}\\.jpg$'
+  `);
+
   const existing = await pool.query('SELECT COUNT(*) FROM gallery_images');
   const count = parseInt(existing.rows[0].count);
   if (count === 0 || count === 1) {

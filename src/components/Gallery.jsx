@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 export default function Gallery() {
   const [isVisible, setIsVisible] = useState(false)
   const [images, setImages] = useState([])
+  const [failedIds, setFailedIds] = useState(new Set())
   const sectionRef = useRef(null)
 
   useEffect(() => {
@@ -21,6 +22,12 @@ export default function Gallery() {
     return () => observer.disconnect()
   }, [])
 
+  const handleImageError = (id) => {
+    setFailedIds(prev => new Set([...prev, id]))
+  }
+
+  const visibleImages = images.filter(img => !failedIds.has(img.id))
+
   return (
     <section id="gallery" ref={sectionRef} className="relative py-28 bg-zinc-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -35,7 +42,7 @@ export default function Gallery() {
         </div>
 
         <div className={`columns-2 md:columns-3 gap-4 space-y-4 transition-all duration-700 delay-200 ${isVisible ? 'animate-fade-in-up' : 'opacity-0'}`}>
-          {images.map((image) => (
+          {visibleImages.map((image) => (
             <div
               key={image.id}
               className="group relative rounded-2xl overflow-hidden bg-zinc-900 break-inside-avoid"
@@ -45,6 +52,7 @@ export default function Gallery() {
                 alt={image.alt}
                 loading="lazy"
                 decoding="async"
+                onError={() => handleImageError(image.id)}
                 className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
