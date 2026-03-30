@@ -17,8 +17,16 @@ async function initDatabase() {
       src VARCHAR(500) NOT NULL,
       alt VARCHAR(500) DEFAULT '',
       display_order INT DEFAULT 0,
-      created_at TIMESTAMP DEFAULT NOW()
+      created_at TIMESTAMP DEFAULT NOW(),
+      image_data BYTEA,
+      mime_type VARCHAR(50)
     )
+  `);
+
+  await pool.query(`
+    ALTER TABLE gallery_images
+    ADD COLUMN IF NOT EXISTS image_data BYTEA,
+    ADD COLUMN IF NOT EXISTS mime_type VARCHAR(50)
   `);
 
   const existing = await pool.query('SELECT COUNT(*) FROM gallery_images');
@@ -220,34 +228,42 @@ app.delete('/api/orders/:id', requireAdmin, async (req, res) => {
   }
 });
 
-const isProductionEnv = process.env.NODE_ENV === 'production';
-const uploadsDir = isProductionEnv
-  ? path.join(__dirname, '..', 'dist', 'images')
-  : path.join(__dirname, '..', 'public', 'images');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const name = 'gallery-' + crypto.randomBytes(8).toString('hex') + ext;
-    cb(null, name);
-  }
-});
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ['.jpg', '.jpeg', '.png', '.webp'];
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (allowed.includes(ext)) cb(null, true);
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
     else cb(new Error('Only JPG, PNG, and WebP images are allowed'));
   }
 });
 
 app.get('/api/gallery', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM gallery_images ORDER BY display_order ASC, id ASC');
-    res.json(result.rows);
+    const result = await pool.query(
+      'SELECT id, src, alt, display_order, created_at, mime_type FROM gallery_images ORDER BY display_order ASC, id ASC'
+    );
+    const images = result.rows.map(row => ({
+      ...row,
+      src: row.mime_type ? `/api/gallery/image/${row.id}` : row.src
+    }));
+    res.json(images);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/gallery/image/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('SELECT image_data, mime_type FROM gallery_images WHERE id=$1', [id]);
+    if (!result.rows.length || !result.rows[0].image_data) {
+      return res.status(404).send('Image not found');
+    }
+    const { image_data, mime_type } = result.rows[0];
+    res.set('Content-Type', mime_type || 'image/jpeg');
+    res.set('Cache-Control', 'public, max-age=31536000');
+    res.send(image_data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -261,22 +277,19 @@ app.post('/api/gallery/upload', requireAdmin, (req, res, next) => {
 }, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
-    const compressedName = 'gallery-' + crypto.randomBytes(8).toString('hex') + '.jpg';
-    const compressedPath = path.join(uploadsDir, compressedName);
-    await sharp(req.file.path)
+    const compressedBuffer = await sharp(req.file.buffer)
       .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
       .jpeg({ quality: 82, progressive: true })
-      .toFile(compressedPath);
-    if (fs.existsSync(req.file.path) && req.file.path !== compressedPath) fs.unlinkSync(req.file.path);
-    const src = '/images/' + compressedName;
+      .toBuffer();
     const alt = req.body.alt || 'Force Up community photo';
     const orderResult = await pool.query('SELECT COALESCE(MAX(display_order), 0) + 1 as next_order FROM gallery_images');
     const displayOrder = orderResult.rows[0].next_order;
     const result = await pool.query(
-      'INSERT INTO gallery_images (src, alt, display_order) VALUES ($1, $2, $3) RETURNING *',
-      [src, alt, displayOrder]
+      'INSERT INTO gallery_images (src, alt, display_order, image_data, mime_type) VALUES ($1, $2, $3, $4, $5) RETURNING id, src, alt, display_order, created_at, mime_type',
+      ['db-stored', alt, displayOrder, compressedBuffer, 'image/jpeg']
     );
-    res.json(result.rows[0]);
+    const row = result.rows[0];
+    res.json({ ...row, src: `/api/gallery/image/${row.id}` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -285,13 +298,7 @@ app.post('/api/gallery/upload', requireAdmin, (req, res, next) => {
 app.delete('/api/gallery/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const image = await pool.query('SELECT * FROM gallery_images WHERE id=$1', [id]);
-    if (image.rows.length > 0) {
-      const filename = path.basename(image.rows[0].src);
-      const filePath = path.join(uploadsDir, filename);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      await pool.query('DELETE FROM gallery_images WHERE id=$1', [id]);
-    }
+    await pool.query('DELETE FROM gallery_images WHERE id=$1', [id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

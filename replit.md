@@ -48,7 +48,7 @@ Force Up is a full-stack React website for the "Force Up" brand/movement. It fea
 ## Database Schema
 - **products**: id, name, description, price, colors[], adult_sizes[], youth_sizes[], image_url, active, timestamps
 - **orders**: id, product_id, customer_name, customer_email, customer_phone, color, size_category, size, quantity, total, status, notes, created_at
-- **gallery_images**: id, src, alt, display_order, created_at
+- **gallery_images**: id, src, alt, display_order, created_at, image_data (BYTEA), mime_type
 
 ## Development
 - **Dev server**: `npm run dev` (runs Express on 3000 + Vite on 5000 concurrently)
@@ -62,7 +62,8 @@ Force Up is a full-stack React website for the "Force Up" brand/movement. It fea
 - Password-protected admin dashboard at /admin for managing orders and products
 - Token-based auth with 24-hour expiry, rate-limited login (5 attempts, 15-min lockout)
 - Community gallery with masonry layout, managed via admin dashboard
-- Admin gallery management: upload photos, delete photos (with file cleanup)
+- Admin gallery management: upload photos (stored as binary in DB, survive deployments), delete photos
+- Uploaded images served via /api/gallery/image/:id; hardcoded images served as static files
 - Adult and Youth sizing options
 
 ## Environment Variables
