@@ -4,6 +4,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
+import sharp from 'sharp';
 import pool from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -260,7 +261,14 @@ app.post('/api/gallery/upload', requireAdmin, (req, res, next) => {
 }, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
-    const src = '/images/' + req.file.filename;
+    const compressedName = 'gallery-' + crypto.randomBytes(8).toString('hex') + '.jpg';
+    const compressedPath = path.join(uploadsDir, compressedName);
+    await sharp(req.file.path)
+      .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 82, progressive: true })
+      .toFile(compressedPath);
+    if (fs.existsSync(req.file.path) && req.file.path !== compressedPath) fs.unlinkSync(req.file.path);
+    const src = '/images/' + compressedName;
     const alt = req.body.alt || 'Force Up community photo';
     const orderResult = await pool.query('SELECT COALESCE(MAX(display_order), 0) + 1 as next_order FROM gallery_images');
     const displayOrder = orderResult.rows[0].next_order;
