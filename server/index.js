@@ -30,11 +30,11 @@ async function initDatabase() {
   `);
 
   // Remove stale uploaded records — old file-based uploads that were wiped on deploy
-  // These have hex-pattern filenames (e.g. /images/gallery-abc123.jpg) with no image_data
+  // These have 16-char hex filenames (e.g. /images/gallery-abc123def456789a.jpg or .jpeg)
   await pool.query(`
     DELETE FROM gallery_images
     WHERE image_data IS NULL
-    AND src ~ '^/images/gallery-[a-f0-9]{16}\\.jpg$'
+    AND src ~ '^/images/gallery-[a-f0-9]{16}\\.'
   `);
 
   const existing = await pool.query('SELECT COUNT(*) FROM gallery_images');
