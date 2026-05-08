@@ -77,7 +77,39 @@ async function initDatabase() {
   }
 }
 
+async function autoRotateGalleryImages() {
+  const imagesDir = path.join(__dirname, '../public/images');
+  let files;
+  try {
+    files = fs.readdirSync(imagesDir).filter(f =>
+      f.startsWith('gallery') && /\.(jpe?g|png|webp)$/i.test(f)
+    );
+  } catch {
+    return;
+  }
+  let fixed = 0;
+  for (const file of files) {
+    const fp = path.join(imagesDir, file);
+    try {
+      const meta = await sharp(fp).metadata();
+      // orientation 1 = already upright, undefined = no EXIF tag (already baked in correctly)
+      if (meta.orientation && meta.orientation !== 1) {
+        const buf = await sharp(fp)
+          .rotate()
+          .jpeg({ quality: 88, progressive: true })
+          .toBuffer();
+        fs.writeFileSync(fp, buf);
+        fixed++;
+      }
+    } catch {
+      // skip unreadable files
+    }
+  }
+  if (fixed > 0) console.log(`Auto-rotated ${fixed} gallery image(s)`);
+}
+
 initDatabase().catch(err => console.error('Database init error:', err));
+autoRotateGalleryImages().catch(err => console.error('Auto-rotate error:', err));
 
 const app = express();
 app.use(express.json());
