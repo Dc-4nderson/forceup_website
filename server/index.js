@@ -286,6 +286,7 @@ app.post('/api/gallery/upload', requireAdmin, (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
     const compressedBuffer = await sharp(req.file.buffer)
+      .rotate()
       .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
       .jpeg({ quality: 82, progressive: true })
       .toBuffer();
