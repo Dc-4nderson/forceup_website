@@ -45,7 +45,7 @@ export default function Gallery() {
           {visibleImages.map((image) => (
             <div
               key={image.id}
-              className="group relative rounded-2xl overflow-hidden bg-zinc-900 break-inside-avoid"
+              className="group relative rounded-2xl overflow-hidden bg-zinc-900 break-inside-avoid aspect-[3/4]"
             >
               <img
                 src={image.src}
@@ -53,7 +53,7 @@ export default function Gallery() {
                 loading="lazy"
                 decoding="async"
                 onError={() => handleImageError(image.id)}
-                className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
