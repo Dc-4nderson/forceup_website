@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ShoppingBag, Star, Shirt, Shield, Paintbrush, Users, Minus, Plus, QrCode, CheckCircle } from 'lucide-react'
+import { ShoppingBag, Star, Shirt, Shield, Paintbrush, Users, Minus, Plus, CheckCircle, CreditCard } from 'lucide-react'
 
 const colorways = [
   { name: 'Black', image: '/images/shirt-black.png' },
@@ -27,8 +27,10 @@ export default function Shop() {
   const [selectedSize, setSelectedSize] = useState('M')
   const [quantity, setQuantity] = useState(1)
   const [selectedColor, setSelectedColor] = useState(0)
-  const [showQR, setShowQR] = useState(false)
-  const [orderSubmitted, setOrderSubmitted] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [checkoutError, setCheckoutError] = useState('')
+  const [paymentSuccess, setPaymentSuccess] = useState(false)
   const [customerName, setCustomerName] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
@@ -43,10 +45,22 @@ export default function Shop() {
     return () => observer.disconnect()
   }, [])
 
-  const submitOrder = async () => {
-    if (!customerName.trim()) return
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('payment') === 'success') {
+      setPaymentSuccess(true)
+      setShowForm(true)
+      window.history.replaceState({}, '', window.location.pathname)
+      document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [])
+
+  const checkoutWithStripe = async () => {
+    if (!customerName.trim() || !customerEmail.trim()) return
+    setCheckoutLoading(true)
+    setCheckoutError('')
     try {
-      await fetch('/api/orders', {
+      const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -58,12 +72,14 @@ export default function Shop() {
           size_category: sizeCategory,
           size: selectedSize,
           quantity,
-          total: PRICE * quantity,
         })
       })
-      setOrderSubmitted(true)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Checkout failed')
+      window.location.href = data.url
     } catch (err) {
-      console.error(err)
+      setCheckoutError(err.message)
+      setCheckoutLoading(false)
     }
   }
 
@@ -193,79 +209,70 @@ export default function Shop() {
               </div>
 
               <button
-                onClick={() => setShowQR(!showQR)}
+                onClick={() => setShowForm(!showForm)}
                 className="w-full flex items-center justify-center gap-3 bg-white text-black py-4 px-8 rounded-full text-sm font-bold uppercase tracking-widest hover:bg-gray-200 transition-all hover:scale-[1.02]"
               >
-                <QrCode className="w-5 h-5" />
-                {showQR ? 'Hide QR Code' : `Buy Now, $${(PRICE * quantity).toFixed(2)}`}
+                <ShoppingBag className="w-5 h-5" />
+                {showForm && !paymentSuccess ? 'Close' : `Buy Now — $${(PRICE * quantity).toFixed(2)}`}
               </button>
 
-              {showQR && (
+              {showForm && (
                 <div className="mt-6 p-6 border border-white/10 rounded-2xl bg-zinc-900">
-                  {orderSubmitted ? (
+                  {paymentSuccess ? (
                     <div className="text-center py-4">
                       <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
-                      <p className="text-white font-semibold text-lg mb-2">Order Submitted!</p>
+                      <p className="text-white font-semibold text-lg mb-2">Payment Successful!</p>
                       <p className="text-gray-400 text-sm leading-relaxed">
-                        We will contact you within 24 hours to arrange delivery of your shirt. Thank you for supporting the movement!
+                        Thank you for your order! A confirmation email is on its way. We’ll reach out within 24 hours to arrange delivery. Welcome to the movement.
                       </p>
                     </div>
                   ) : (
-                    <>
-                      <div className="mb-6 space-y-3">
-                        <p className="text-white font-semibold text-sm uppercase tracking-wider">Your Info</p>
-                        <input
-                          type="text"
-                          placeholder="Your Name *"
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          className="w-full bg-zinc-800 text-white rounded-lg px-4 py-3 border border-white/10 text-sm placeholder-gray-500 focus:border-white/30 outline-none"
-                        />
-                        <input
-                          type="email"
-                          placeholder="Email"
-                          value={customerEmail}
-                          onChange={(e) => setCustomerEmail(e.target.value)}
-                          className="w-full bg-zinc-800 text-white rounded-lg px-4 py-3 border border-white/10 text-sm placeholder-gray-500 focus:border-white/30 outline-none"
-                        />
-                        <input
-                          type="tel"
-                          placeholder="Phone Number"
-                          value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value)}
-                          className="w-full bg-zinc-800 text-white rounded-lg px-4 py-3 border border-white/10 text-sm placeholder-gray-500 focus:border-white/30 outline-none"
-                        />
-                        <div className="bg-zinc-800 rounded-lg px-4 py-3 border border-white/10 text-sm text-gray-400">
-                          {colorways[selectedColor].name} / {sizeCategory} {selectedSize} / Qty: {quantity} / ${(PRICE * quantity).toFixed(2)}
-                        </div>
-                        <button
-                          onClick={submitOrder}
-                          disabled={!customerName.trim()}
-                          className="w-full bg-white/10 text-white py-3 rounded-lg text-sm font-bold hover:bg-white/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                          Submit Order Details
-                        </button>
+                    <div className="space-y-3">
+                      <p className="text-white font-semibold text-sm uppercase tracking-wider">Your Info</p>
+                      <input
+                        type="text"
+                        placeholder="Your Name *"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        className="w-full bg-zinc-800 text-white rounded-lg px-4 py-3 border border-white/10 text-sm placeholder-gray-500 focus:border-white/30 outline-none"
+                      />
+                      <input
+                        type="email"
+                        placeholder="Email * (for confirmation)"
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                        className="w-full bg-zinc-800 text-white rounded-lg px-4 py-3 border border-white/10 text-sm placeholder-gray-500 focus:border-white/30 outline-none"
+                      />
+                      <input
+                        type="tel"
+                        placeholder="Phone Number (optional)"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        className="w-full bg-zinc-800 text-white rounded-lg px-4 py-3 border border-white/10 text-sm placeholder-gray-500 focus:border-white/30 outline-none"
+                      />
+                      <div className="bg-zinc-800 rounded-lg px-4 py-3 border border-white/10 text-sm text-gray-400">
+                        {colorways[selectedColor].name} / {sizeCategory} {selectedSize} × {quantity}
+                        {' — '}<span className="text-white font-medium">${(PRICE * quantity).toFixed(2)}</span>
                       </div>
-                      <div className="text-center border-t border-white/10 pt-6">
-                        <p className="text-white font-semibold text-lg mb-2">Scan to Pay</p>
-                        <p className="text-gray-400 text-sm mb-4 leading-relaxed">
-                          Please use the QR code for payment and we will get notified of your purchase and contact you within 24 hours to arrange delivery of your shirt.
-                        </p>
-                        <a href="https://gl.me/u/8J9BPgwK97T7" target="_blank" rel="noopener noreferrer" className="inline-block rounded-xl overflow-hidden bg-white p-2 hover:opacity-90 transition-opacity">
-                          <img
-                            src="/images/payment-qr.jpg"
-                            alt="Payment QR Code"
-                            className="w-48 h-48 object-contain"
-                          />
-                        </a>
-                        <p className="text-gray-400 text-sm mt-3">
-                          Or <a href="https://gl.me/u/8J9BPgwK97T7" target="_blank" rel="noopener noreferrer" className="text-white underline hover:text-gray-300 transition-colors">click here to pay</a>
-                        </p>
-                        <p className="text-gray-500 text-xs mt-4">
-                          Now accepting payment by QR code
-                        </p>
-                      </div>
-                    </>
+                      {checkoutError && (
+                        <p className="text-red-400 text-sm text-center">{checkoutError}</p>
+                      )}
+                      <button
+                        onClick={checkoutWithStripe}
+                        disabled={!customerName.trim() || !customerEmail.trim() || checkoutLoading}
+                        className="w-full bg-white text-black py-4 rounded-xl text-sm font-bold hover:bg-gray-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {checkoutLoading ? (
+                          <span>Redirecting to Checkout…</span>
+                        ) : (
+                          <>
+                            <CreditCard className="w-4 h-4" />
+                            Checkout — ${(PRICE * quantity).toFixed(2)}
+                          </>
+                        )}
+                      </button>
+                      <p className="text-gray-600 text-xs text-center">Secure checkout powered by Stripe</p>
+                    </div>
                   )}
                 </div>
               )}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Trash2, Package, ShoppingCart, Check, Lock, LogOut, AlertCircle, ImagePlus, Upload, X } from 'lucide-react'
+import { ArrowLeft, Trash2, Package, ShoppingCart, Check, Lock, LogOut, AlertCircle, ImagePlus, Upload, X, ChevronDown, Plus, BarChart2 } from 'lucide-react'
 
 const STATUS_OPTIONS = ['pending', 'contacted', 'paid', 'delivered', 'cancelled']
 
@@ -314,12 +314,323 @@ function GalleryTab() {
   )
 }
 
-function ProductsTab() {
+function InventoryTab() {
+  const [products, setProducts] = useState([])
+  const [inventory, setInventory] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [pendingChanges, setPendingChanges] = useState({})
+  const [expandedProduct, setExpandedProduct] = useState(null)
+  const [showAddProduct, setShowAddProduct] = useState(false)
+  const [newProduct, setNewProduct] = useState({ name: '', description: '', price: '' })
+  const [addingProduct, setAddingProduct] = useState(false)
+
+  const fetchData = async () => {
+    try {
+      setError('')
+      const [prods, inv] = await Promise.all([
+        authFetch('/api/products/all'),
+        authFetch('/api/inventory'),
+      ])
+      setProducts(prods)
+      setInventory(inv)
+      if (prods.length > 0 && expandedProduct === null) setExpandedProduct(prods[0].id)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchData() }, [])
+
+  const getStock = (productId, color, size) => {
+    const key = `${productId}-${color}-${size}`
+    if (key in pendingChanges) return pendingChanges[key]
+    const item = inventory.find(i => i.product_id === productId && i.color === color && i.size === size)
+    return item ? item.stock : 0
+  }
+
+  const handleStockChange = (productId, color, size, value) => {
+    const key = `${productId}-${color}-${size}`
+    setPendingChanges(prev => ({ ...prev, [key]: Math.max(0, parseInt(value) || 0) }))
+  }
+
+  const saveChanges = async (productId) => {
+    setSaving(true)
+    try {
+      const product = products.find(p => p.id === productId)
+      if (!product) return
+      const colors = Array.isArray(product.colors) ? product.colors : []
+      const allSizes = [
+        ...(Array.isArray(product.adult_sizes) ? product.adult_sizes : []).map(s => ({ size: s, cat: 'Adult' })),
+        ...(Array.isArray(product.youth_sizes) ? product.youth_sizes : []).map(s => ({ size: s, cat: 'Youth' })),
+      ]
+      const updates = []
+      for (const color of colors) {
+        for (const { size, cat } of allSizes) {
+          const key = `${productId}-${color}-${size}`
+          if (key in pendingChanges) {
+            updates.push({ product_id: productId, color, size, size_category: cat, stock: pendingChanges[key] })
+          }
+        }
+      }
+      if (updates.length > 0) {
+        await authFetch('/api/inventory/batch', { method: 'PUT', body: JSON.stringify({ updates }) })
+        setPendingChanges(prev => {
+          const next = { ...prev }
+          updates.forEach(u => delete next[`${u.product_id}-${u.color}-${u.size}`])
+          return next
+        })
+        await fetchData()
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const toggleProductActive = async (product) => {
+    try {
+      await authFetch(`/api/products/${product.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ ...product, active: !product.active })
+      })
+      fetchData()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const addProduct = async (e) => {
+    e.preventDefault()
+    setAddingProduct(true)
+    try {
+      const result = await authFetch('/api/products', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: newProduct.name,
+          description: newProduct.description,
+          price: parseFloat(newProduct.price),
+          colors: ['Black', 'Navy', 'White'],
+          adult_sizes: ['S', 'M', 'L', 'XL'],
+          youth_sizes: ['YS', 'YM', 'YL', 'YXL'],
+          image_url: '',
+        })
+      })
+      // Seed inventory for new product
+      const colors = ['Black', 'Navy', 'White']
+      const sizes = [
+        { size: 'S', cat: 'Adult' }, { size: 'M', cat: 'Adult' },
+        { size: 'L', cat: 'Adult' }, { size: 'XL', cat: 'Adult' },
+        { size: 'YS', cat: 'Youth' }, { size: 'YM', cat: 'Youth' },
+        { size: 'YL', cat: 'Youth' }, { size: 'YXL', cat: 'Youth' },
+      ]
+      const updates = []
+      for (const color of colors) {
+        for (const { size, cat } of sizes) {
+          updates.push({ product_id: result.id, color, size, size_category: cat, stock: 0 })
+        }
+      }
+      await authFetch('/api/inventory/batch', { method: 'PUT', body: JSON.stringify({ updates }) })
+      setNewProduct({ name: '', description: '', price: '' })
+      setShowAddProduct(false)
+      await fetchData()
+      setExpandedProduct(result.id)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setAddingProduct(false)
+    }
+  }
+
+  if (loading) return <p className="text-gray-400 text-center py-10">Loading inventory...</p>
+
   return (
-    <div className="text-center py-20">
-      <Package className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-      <h2 className="text-2xl font-bold text-white mb-2">Coming Soon</h2>
-      <p className="text-gray-500 text-sm">Product management will be available here in a future update.</p>
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-white">Inventory ({products.length} product{products.length !== 1 ? 's' : ''})</h2>
+        <button
+          onClick={() => setShowAddProduct(!showAddProduct)}
+          className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-200 transition-colors"
+        >
+          <Plus className="w-4 h-4" /> Add Product
+        </button>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 bg-red-900/30 border border-red-800 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
+        </div>
+      )}
+
+      {showAddProduct && (
+        <form onSubmit={addProduct} className="bg-zinc-800 rounded-xl p-5 border border-white/10 mb-6">
+          <h3 className="text-white font-semibold mb-4">New Product</h3>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <input
+              required
+              type="text"
+              placeholder="Product Name *"
+              value={newProduct.name}
+              onChange={(e) => setNewProduct(p => ({ ...p, name: e.target.value }))}
+              className="bg-zinc-700 text-white rounded-lg px-4 py-2.5 border border-white/10 text-sm focus:outline-none focus:border-white/30"
+            />
+            <input
+              required
+              type="number"
+              step="0.01"
+              min="0.01"
+              placeholder="Price ($) *"
+              value={newProduct.price}
+              onChange={(e) => setNewProduct(p => ({ ...p, price: e.target.value }))}
+              className="bg-zinc-700 text-white rounded-lg px-4 py-2.5 border border-white/10 text-sm focus:outline-none focus:border-white/30"
+            />
+            <input
+              type="text"
+              placeholder="Description"
+              value={newProduct.description}
+              onChange={(e) => setNewProduct(p => ({ ...p, description: e.target.value }))}
+              className="bg-zinc-700 text-white rounded-lg px-4 py-2.5 border border-white/10 text-sm focus:outline-none focus:border-white/30 sm:col-span-2"
+            />
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button type="submit" disabled={addingProduct} className="bg-white text-black px-5 py-2 rounded-lg text-sm font-bold hover:bg-gray-200 transition-colors disabled:opacity-50">
+              {addingProduct ? 'Adding...' : 'Add Product'}
+            </button>
+            <button type="button" onClick={() => setShowAddProduct(false)} className="bg-zinc-700 text-gray-300 px-5 py-2 rounded-lg text-sm font-bold hover:bg-zinc-600 transition-colors">
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {products.length === 0 ? (
+        <p className="text-gray-500 text-center py-10">No products yet. Add your first product above.</p>
+      ) : (
+        <div className="space-y-4">
+          {products.map((product) => {
+            const colors = Array.isArray(product.colors) ? product.colors : []
+            const adultSizes = Array.isArray(product.adult_sizes) ? product.adult_sizes : []
+            const youthSizes = Array.isArray(product.youth_sizes) ? product.youth_sizes : []
+            const allSizes = [
+              ...adultSizes.map(s => ({ size: s, cat: 'Adult' })),
+              ...youthSizes.map(s => ({ size: s, cat: 'Youth' })),
+            ]
+            const isExpanded = expandedProduct === product.id
+            const hasPending = Object.keys(pendingChanges).some(k => k.startsWith(`${product.id}-`))
+            const totalStock = inventory
+              .filter(i => i.product_id === product.id)
+              .reduce((sum, i) => sum + Number(i.stock), 0)
+
+            return (
+              <div key={product.id} className="bg-zinc-800 rounded-xl border border-white/10 overflow-hidden">
+                <div
+                  className="flex items-center justify-between p-5 cursor-pointer hover:bg-white/5 transition-colors"
+                  onClick={() => setExpandedProduct(isExpanded ? null : product.id)}
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-white font-semibold">{product.name}</p>
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${product.active ? 'bg-green-900 text-green-300' : 'bg-zinc-700 text-gray-400'}`}>
+                        {product.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <p className="text-gray-400 text-sm mt-0.5">
+                      ${Number(product.price).toFixed(2)} &middot; {totalStock} units in stock
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                    {hasPending && (
+                      <button
+                        onClick={() => saveChanges(product.id)}
+                        disabled={saving}
+                        className="bg-white text-black px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-200 transition-colors disabled:opacity-50"
+                      >
+                        {saving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => toggleProductActive(product)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                        product.active ? 'bg-zinc-700 text-gray-300 hover:bg-zinc-600' : 'bg-green-900/30 text-green-400 hover:bg-green-900/50'
+                      }`}
+                    >
+                      {product.active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform pointer-events-none ${isExpanded ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="px-5 pb-5 border-t border-white/10">
+                    <p className="text-gray-500 text-xs uppercase tracking-wider mt-4 mb-3">Stock Levels (click any number to edit)</p>
+                    {colors.length === 0 || allSizes.length === 0 ? (
+                      <p className="text-gray-500 text-sm">No sizes or colors configured.</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="text-sm">
+                          <thead>
+                            <tr>
+                              <th className="text-left text-gray-500 font-medium pb-2 pr-6">Size</th>
+                              {colors.map(color => (
+                                <th key={color} className="text-center text-gray-400 font-medium pb-2 px-4 min-w-[90px]">{color}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {allSizes.map(({ size, cat }) => (
+                              <tr key={size} className="border-t border-white/5">
+                                <td className="py-2 pr-6">
+                                  <span className="text-gray-300 font-medium">{size}</span>
+                                  <span className="text-gray-600 text-xs ml-1">({cat})</span>
+                                </td>
+                                {colors.map(color => {
+                                  const stock = getStock(product.id, color, size)
+                                  const key = `${product.id}-${color}-${size}`
+                                  const isPending = key in pendingChanges
+                                  return (
+                                    <td key={color} className="py-2 px-4 text-center">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={stock}
+                                        onChange={(e) => handleStockChange(product.id, color, size, e.target.value)}
+                                        className={`w-16 text-center rounded px-2 py-1.5 text-sm focus:outline-none border transition-colors ${
+                                          isPending
+                                            ? 'bg-amber-900/20 border-amber-600/50 text-amber-300'
+                                            : stock === 0
+                                              ? 'bg-red-900/10 border-red-900/20 text-red-400'
+                                              : 'bg-zinc-700 border-white/10 text-white'
+                                        }`}
+                                      />
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    {hasPending && (
+                      <button
+                        onClick={() => saveChanges(product.id)}
+                        disabled={saving}
+                        className="mt-4 bg-white text-black px-5 py-2 rounded-lg text-sm font-bold hover:bg-gray-200 transition-colors disabled:opacity-50"
+                      >
+                        {saving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -481,18 +792,18 @@ export default function Admin() {
             <ImagePlus className="w-4 h-4" /> Gallery
           </button>
           <button
-            onClick={() => setTab('products')}
+            onClick={() => setTab('inventory')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
-              tab === 'products' ? 'bg-white text-black' : 'bg-zinc-800 text-gray-400 hover:text-white border border-white/10'
+              tab === 'inventory' ? 'bg-white text-black' : 'bg-zinc-800 text-gray-400 hover:text-white border border-white/10'
             }`}
           >
-            <Package className="w-4 h-4" /> Products
+            <BarChart2 className="w-4 h-4" /> Inventory
           </button>
         </div>
 
         {tab === 'orders' && <OrdersTab />}
         {tab === 'gallery' && <GalleryTab />}
-        {tab === 'products' && <ProductsTab />}
+        {tab === 'inventory' && <InventoryTab />}
       </div>
     </div>
   )
