@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -31,7 +32,7 @@ async function sendOrderEmails(order) {
   const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
   const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER;
   const orderTotal = Number(order.total).toFixed(2);
-  const siteUrl = process.env.SITE_URL || 'https://forceup.co';
+  const siteUrl = (process.env.SITE_URL || 'https://forceupnation.com').replace(/\/$/, '');
 
   if (order.customer_email) {
     try {
@@ -513,7 +514,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
     );
     const order = orderResult.rows[0];
 
-    const origin = process.env.SITE_URL || `${req.protocol}://${req.get('host')}`;
+    const origin = (process.env.SITE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
